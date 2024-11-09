@@ -76,6 +76,7 @@ export type SearchOptions = {
   lang?: string;
   country?: string;
   location?: string;
+  tbm?: string;
 };
 
 export type CrawlerOptions = {

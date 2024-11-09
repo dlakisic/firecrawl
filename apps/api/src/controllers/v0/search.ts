@@ -36,6 +36,7 @@ export async function searchHelper(
   }
 
   const tbs = searchOptions.tbs ?? null;
+  const tbm = searchOptions.tbm ?? null;
   const filter = searchOptions.filter ?? null;
   let num_results = Math.min(searchOptions.limit ?? 7, 10);
 
@@ -54,6 +55,7 @@ export async function searchHelper(
     lang: searchOptions.lang ?? "en",
     country: searchOptions.country ?? "us",
     location: searchOptions.location,
+    tbm: tbm,
   });
 
   let justSearch = pageOptions.fetchPageContent === false;
@@ -178,6 +180,7 @@ export async function searchController(req: Request, res: Response) {
     );
     const endTime = new Date().getTime();
     const timeTakenInSeconds = (endTime - startTime) / 1000;
+    const searchMode = searchOptions.tbm === 'nws' ? 'news_search' : 'web_search';
     logJob({
       job_id: jobId,
       success: result.success,
@@ -191,6 +194,7 @@ export async function searchController(req: Request, res: Response) {
       crawlerOptions: crawlerOptions,
       pageOptions: pageOptions,
       origin: origin,
+      mode: searchMode,
     });
     return res.status(result.returnCode).json(result);
   } catch (error) {

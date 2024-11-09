@@ -18,7 +18,7 @@ function get_useragent(): string {
     return _useragent_list[Math.floor(Math.random() * _useragent_list.length)];
 }
 
-async function _req(term: string, results: number, lang: string, country: string, start: number, proxies: any, timeout: number, tbs: string = null, filter: string = null) {
+async function _req(term: string, results: number, lang: string, country: string, start: number, proxies: any, timeout: number, tbs: string = null, filter: string = null, tbm: string = null) {
     const params = {
         "q": term,
         "num": results,  // Number of results to return
@@ -28,6 +28,9 @@ async function _req(term: string, results: number, lang: string, country: string
     };
     if (tbs) {
         params["tbs"] = tbs;
+    }
+    if (tbm) {
+        params["tbm"] = tbm;
     }
     if (filter) {
         params["filter"] = filter;
@@ -52,7 +55,7 @@ async function _req(term: string, results: number, lang: string, country: string
 
 
 
-export async function googleSearch(term: string, advanced = false, num_results = 7, tbs = null, filter = null, lang = "en", country = "us", proxy = null, sleep_interval = 0, timeout = 5000, ) :Promise<SearchResult[]> {
+export async function googleSearch(term: string, advanced = false, num_results = 7, tbs = null, filter = null, lang = "en", country = "us", proxy = null, sleep_interval = 0, timeout = 5000, tbm = null) :Promise<SearchResult[]> {
     let proxies = null;
     if (proxy) {
         if (proxy.startsWith("https")) {
@@ -70,9 +73,9 @@ export async function googleSearch(term: string, advanced = false, num_results =
     const maxAttempts = 20; // Define a maximum number of attempts to prevent infinite loop
     while (start < num_results && attempts < maxAttempts) {
         try {
-            const resp = await _req(term, num_results - start, lang, country, start, proxies, timeout, tbs, filter);
+            const resp = await _req(term, num_results - start, lang, country, start, proxies, timeout, tbs, filter, tbm);
             const $ = cheerio.load(resp.data);
-            const result_block = $("div.g");
+            const result_block = tbm === 'nws' ? $("div[data-news-cluster-id]") : $("div.g");
             if (result_block.length === 0) {
                 start += 1;
                 attempts += 1;
@@ -80,17 +83,32 @@ export async function googleSearch(term: string, advanced = false, num_results =
                 attempts = 0; // Reset attempts if we have results
             }
             result_block.each((index, element) => {
-                const linkElement = $(element).find("a");
-                const link = linkElement && linkElement.attr("href") ? linkElement.attr("href") : null;
-                const title = $(element).find("h3");
-                const ogImage = $(element).find("img").eq(1).attr("src");
-                const description_box = $(element).find("div[style='-webkit-line-clamp:2']");
-                const answerBox = $(element).find(".mod").text();
-                if (description_box) {
-                    const description = description_box.text();
+                if (tbm === 'nws') {
+                    const $element = $(element);
+                    const linkElement = $element.find("a").first();
+                    const link = linkElement.attr("href");
+                    const title = $element.find("div[role='heading']").text().trim();
+                    const description = $element.find("div").filter((i, el) => $(el).text().length > 100).first().text().trim();
+                    const source = $element.find("div").filter((i, el) => $(el).find("g-img").length > 0).text().trim();
+                    const date = $element.find("div").filter((i, el) => $(el).text().includes("Il y a")).text().trim();
+
                     if (link && title && description) {
                         start += 1;
-                        results.push(new SearchResult(link, title.text(), description));
+                        results.push(new SearchResult(link, title, description));
+                    }
+                } else {
+                    const linkElement = $(element).find("a");
+                    const link = linkElement && linkElement.attr("href") ? linkElement.attr("href") : null;
+                    const title = $(element).find("h3");
+                    const ogImage = $(element).find("img").eq(1).attr("src");
+                    const description_box = $(element).find("div[style='-webkit-line-clamp:2']");
+                    const answerBox = $(element).find(".mod").text();
+                    if (description_box) {
+                        const description = description_box.text();
+                        if (link && title && description) {
+                            start += 1;
+                            results.push(new SearchResult(link, title.text(), description));
+                        }
                     }
                 }
             });

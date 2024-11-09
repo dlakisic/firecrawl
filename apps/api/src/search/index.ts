@@ -17,6 +17,7 @@ export async function search({
   proxy = null,
   sleep_interval = 0,
   timeout = 5000,
+  tbm = null,
 }: {
   query: string;
   advanced?: boolean;
@@ -29,6 +30,7 @@ export async function search({
   proxy?: string;
   sleep_interval?: number;
   timeout?: number;
+  tbm?: string;
 }): Promise<SearchResult[]> {
   try {
     if (process.env.SEARCHAPI_API_KEY) {
@@ -61,7 +63,8 @@ export async function search({
       country,
       proxy,
       sleep_interval,
-      timeout
+      timeout,
+      tbm
     );
   } catch (error) {
     Logger.error(`Error in search function: ${error}`);
