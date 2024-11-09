@@ -189,12 +189,11 @@ export async function searchController(req: Request, res: Response) {
       docs: result.data,
       time_taken: timeTakenInSeconds,
       team_id: team_id,
-      mode: "search",
+      mode: searchMode,
       url: req.body.query,
       crawlerOptions: crawlerOptions,
       pageOptions: pageOptions,
       origin: origin,
-      mode: searchMode,
     });
     return res.status(result.returnCode).json(result);
   } catch (error) {
